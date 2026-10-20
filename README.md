@@ -85,3 +85,7 @@ npm.cmd run test:e2e
 ```
 
 构建配置保留旧产物，不清空 dist；测试截图和输出使用任务 work 下的新目录。2026-10-20 验收结果详见上一级《升级说明与验收报告_v2_20261020.md》。真实 iOS/Android、系统级安装和屏幕阅读器尚未真机验证。
+
+## 网站发布
+
+GitHub Pages 使用独立的 `npm run build:pages` 和 `/brain-training/` 路径；本地开发与原 dist 构建不变。推送 main 后自动测试并部署，操作与数据迁移说明见 [DEPLOYMENT.md](DEPLOYMENT.md)。网站地址：https://cherrychen26.github.io/brain-training/ 。
