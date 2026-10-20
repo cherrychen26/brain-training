@@ -1,0 +1,5 @@
+import {gameMeta,type AppData,type Result} from './types';
+import {eligible,comparableChange} from './adaptive';
+import {localDay} from './random';
+export function periodStats(data:AppData,days:number,now=new Date()){const start=new Date(now);start.setDate(start.getDate()-days+1);const from=localDay(start),to=localDay(now);const records=data.results.filter(r=>r.day>=from&&r.day<=to&&r.rated!==false);const trained=new Set(records.filter(r=>r.duration>0||r.attempts>0).map(r=>r.day));const completed=Object.values(data.plans??{}).filter(s=>s.day>=from&&s.day<=to&&s.finished&&s.results.length===s.plan.length&&s.results.some(r=>r.outcome==='completed')).length;return {records,trained:trained.size,completed,regularity:Math.round(trained.size/days*100)}}
+export function abilityComparison(results:Result[]){const rated=results.filter(eligible),skills=[...new Set(Object.values(gameMeta).map(m=>m.skill))];return skills.map(skill=>{const rows=rated.filter(r=>gameMeta[r.game].skill===skill),recent=rows.slice(-5),history=rows.slice(0,-5),change=comparableChange(recent,history);return {skill,...change,samples:rows.length}})}

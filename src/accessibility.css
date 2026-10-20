@@ -1,0 +1,13 @@
+/* Readable defaults for older adults; imported last so all game surfaces share them. */
+.muted,.instruction p,.game-feedback,.setting-row p{font-size:1rem}
+.game-card p,.fine-print,.hero-meta,.game-topline,.history-game p,.skill-label,.date,.brand-note,.sidebar-note small,.weekly-note{font-size:.88rem}
+.game-card p{min-height:65px}.pill,.game-card small,.section-title span,.practice-link,.gentle-note p,.session-plan small,.training-tip small{font-size:.83rem}
+.select-label{font-size:.83rem!important}.select-label select{max-width:100%}
+.trend-controls{display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin:18px 0}
+:root:has(.large-text){font-size:21px}
+.high-contrast .skill-label,.high-contrast .date,.high-contrast .brand-note,.high-contrast .hero-meta,.high-contrast .game-topline{color:#203e29}
+.high-contrast .schulte-grid button.found{color:#29492d;background:#d7e6ca}
+.toggle{height:48px;border:4px solid var(--surface)}.toggle>span{top:7px}.toggle[aria-checked=true]>span{left:24px}
+.number-pad button{min-width:48px;min-height:50px}
+@media(max-width:760px){nav button{font-size:.82rem;padding:7px 9px}.sidebar{height:84px}main{padding-bottom:84px}.today-strip{padding:18px 12px}.hero-meta{flex-wrap:wrap;gap:8px}.game-card p{min-height:76px}.skill-label{font-size:.75rem}.section-title span{line-height:1.7}.gentle-note p{font-size:.88rem}.session-plan small{font-size:.8rem}.game-topline{gap:7px;flex-wrap:wrap}.setting-row{gap:12px}.setting-row h3{font-size:1rem}.setting-row p{font-size:.95rem}.sudoku-grid button{min-height:48px}.number-pad{gap:5px}.toast{bottom:96px}.large-text .history-date{min-width:74px}.large-text .session-plan{grid-template-columns:1fr}.large-text .week-dots{gap:9px}.large-text .game-controls button{font-size:.95rem}.large-text nav button{font-size:.73rem;min-width:66px;padding:7px}.trend-controls{gap:12px}.trend-controls .select-label{flex:1;min-width:180px;justify-content:space-between}.table-scroll th,.table-scroll td{padding:10px 6px}}
+@media(max-width:400px){.page{padding-left:16px;padding-right:16px}.game-panel{padding-left:12px;padding-right:12px}.hero{padding:23px}.hero-meta{font-size:.83rem}.today-stats{gap:15px}.week-dots{gap:13px}.game-cards{gap:10px}.game-card{padding:18px 13px}.memory-grid button svg{width:32px;height:32px}}

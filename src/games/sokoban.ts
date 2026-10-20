@@ -1,0 +1,19 @@
+import type {Direction,SokobanBoard,SokobanState} from '../domain/types';
+export const directions:Direction[]=['up','down','left','right'];
+export const opposite:Record<Direction,Direction>={up:'down',down:'up',left:'right',right:'left'};
+export function neighbor(board:SokobanBoard,pos:number,d:Direction):number{const x=pos%board.width,y=Math.floor(pos/board.width);if((d==='left'&&x===0)||(d==='right'&&x===board.width-1)||(d==='up'&&y===0)||(d==='down'&&y===board.height-1))return -1;return pos+({up:-board.width,down:board.width,left:-1,right:1}[d])}
+export function moveBox(board:SokobanBoard,d:Direction):SokobanBoard|null{const next=neighbor(board,board.player,d);if(next<0||board.walls.includes(next))return null;let boxes=[...board.boxes];if(boxes.includes(next)){const dest=neighbor(board,next,d);if(dest<0||board.walls.includes(dest)||boxes.includes(dest))return null;boxes=boxes.map(p=>p===next?dest:p)}return {...board,player:next,boxes}}
+export const wonBox=(b:SokobanBoard)=>b.boxes.every(p=>b.goals.includes(p));
+export function deadlocked(b:SokobanBoard){return b.boxes.some(p=>!b.goals.includes(p)&&(['up','down'] as Direction[]).some(v=>(b.walls.includes(neighbor(b,p,v))||neighbor(b,p,v)<0)&&(['left','right'] as Direction[]).some(h=>b.walls.includes(neighbor(b,p,h))||neighbor(b,p,h)<0)))}
+export function solveBox(board:SokobanBoard,max=80000):Direction[]|null{if(wonBox(board))return [];type Node={b:SokobanBoard;parent:number;dir:Direction|null};const q:Node[]=[{b:board,parent:-1,dir:null}];const key=(b:SokobanBoard)=>b.player+':'+[...b.boxes].sort((a,b)=>a-b).join(',');const visited=new Set([key(board)]);for(let i=0;i<q.length&&i<max;i++){for(const d of directions){const b=moveBox(q[i].b,d);if(!b||deadlocked(b))continue;const k=key(b);if(visited.has(k))continue;visited.add(k);q.push({b,parent:i,dir:d});if(wonBox(b)){const path:Direction[]=[];let index=q.length-1;while(q[index].parent>=0){path.push(q[index].dir!);index=q[index].parent}return path.reverse()}}}return null}
+function generateCandidate(level:number,rng:()=>number):SokobanState{const width=level<=3?6:7,height=6;const walls:number[]=[];for(let i=0;i<width*height;i++){if(i<width||i>=width*(height-1)||i%width===0||i%width===width-1)walls.push(i)}if(level>=7)walls.push(2*width+3);const count=level<=3?1:level<=7?2:3;const goals=Array.from({length:count},(_,i)=>width+2+i);let board:SokobanBoard={width,height,walls,goals,boxes:[...goals],player:2*width+2};const back:Direction[]=[];for(let step=0;step<80+level*30;step++){const d=directions[Math.floor(rng()*4)];const next=neighbor(board,board.player,d);if(next<0||walls.includes(next)||board.boxes.includes(next))continue;const behind=neighbor(board,board.player,opposite[d]);const pull=board.boxes.includes(behind)&&rng()<.85;board={...board,boxes:pull?board.boxes.map(p=>p===behind?board.player:p):board.boxes,player:next};back.push(opposite[d])}if(wonBox(board)){// Construct a guaranteed one-push fallback without an unbounded retry.
+ board={...board,boxes:[...goals],player:3*width+2};board.boxes[0]=2*width+2;back.splice(0,back.length,'up');
+}const solution=[...back].reverse();const initial={...board,boxes:[...board.boxes]};return {kind:'sokoban',...board,initial,undo:[],moves:0,solution,highlight:null}}
+
+export function generateBox(level:number,rng:()=>number):SokobanState{
+ let best:SokobanState|null=null;const target=2+level*2;
+ for(let attempt=0;attempt<4;attempt++){const s=generateCandidate(level,rng),solution=solveBox(s,15000);if(!solution?.length)continue;s.solution=solution;s.optimalSteps=solution.length;if(!best||Math.abs(solution.length-target)<Math.abs(best.optimalSteps!-target))best=s;if(solution.length>=target&&solution.length<=target+8)break}
+ if(best)return best;
+ const s=generateCandidate(1,rng);const path=solveBox(s,15000);if(path?.length){s.solution=path;s.optimalSteps=path.length;return s}
+ throw Error('推箱子题目生成验证失败，请重试。');
+}
