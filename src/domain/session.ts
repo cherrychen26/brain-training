@@ -1,7 +1,7 @@
 import {gameIds,type AppData,type GameId,type Round,type Result,type Outcome,type Session} from './types';
 import {CONFIG} from './config';
 import {random,seedOf,localDay} from './random';
-import {dailyPlan} from './planner';
+import {dailyPlan,bonusPlan} from './planner';
 import {makeGame,act,gameDone,type Action} from '../games/engine';
 import {questionSignature} from '../games/signature';
 import {advanceTimed,explanation} from '../games/additional';
@@ -14,7 +14,7 @@ export function ensureDailyPlan(data:AppData,day=localDay()):AppData{
  if(data.plans?.[day])return data;const n=structuredClone(data);n.plans??={};n.profileId??=crypto.randomUUID();const seed=`${n.profileId}:${day}:v${CONFIG.planVersion}`,plan=dailyPlan(day,n.profileId);
  const limit=Math.min(CONFIG.dailySeconds,n.settings.sessionMinutes*60),per=limit/Math.max(1,plan.length);const previous=Object.values(n.plans).filter(s=>s.day<day).sort((a,b)=>b.day.localeCompare(a.day)).slice(0,14);const used=new Set(previous.flatMap(s=>(s.prepared??[]).map(r=>questionSignature(r.state))));
  const prepared=plan.map((id,i)=>{let r=makeRound(id,n.difficulties[id].level,`${seed}:${i}:${id}`,per);for(let attempt=1;attempt<=12&&used.has(questionSignature(r.state));attempt++)r=makeRound(id,n.difficulties[id].level,`${seed}:${i}:${id}:variation:${attempt}`,per);return r});
- n.plans[day]={id:`daily:${n.profileId}:${day}`,day,startedAt:'',plan,index:0,elapsed:0,limit,paused:true,round:null,results:[],finished:!plan.length,mode:'daily',version:CONFIG.planVersion,seed,prepared,replacements:[],transition:0};return n;
+ n.plans[day]={id:`daily:${n.profileId}:${day}`,day,startedAt:'',plan,index:0,elapsed:0,limit,paused:true,round:null,results:[],finished:!plan.length,mode:'daily',version:CONFIG.planVersion,seed,prepared,replacements:[],transition:0,bonus:{firstCount:plan.length,generated:false,blocked:false}};return n;
 }
 export function startSession(data:AppData,day=localDay(),only?:GameId):AppData{
  data=rollover(data,day);if(data.active&&!data.active.finished)return data;
@@ -32,8 +32,10 @@ export function replacePlannedGame(data:AppData,day:string,index:number,replacem
 export function finishRound(data:AppData,outcome:Outcome):AppData{
  if(!data.active?.round||data.active.finished)return data;const n=structuredClone(data),s=n.active!,r=s.round!;const id=`${s.id}:${s.index}`;
  if(n.results.some(x=>x.id===id)){s.round=null;s.finished=true;s.paused=true;return sync(n)}
- const result:Result={id,sessionId:s.id,game:r.game,level:r.level,date:new Date().toISOString(),day:s.day,duration:r.elapsed,target:targetTime(r.game,r.level),correct:r.correct,attempts:r.attempts,hints:r.hints,outcome,before:n.difficulties[r.game].level,after:n.difficulties[r.game].level,errors:r.attempts-r.correct,personalTarget:personalTarget(n.results,r.game,r.level),rated:s.mode!=='practice',mode:s.mode??'legacy',explanation:explanation(r.state)};
+ const result:Result={...(s.mode==='daily'?{group:trainingGroup(s)}:{}),id,sessionId:s.id,game:r.game,level:r.level,date:new Date().toISOString(),day:s.day,duration:r.elapsed,target:targetTime(r.game,r.level),correct:r.correct,attempts:r.attempts,hints:r.hints,outcome,before:n.difficulties[r.game].level,after:n.difficulties[r.game].level,errors:r.attempts-r.correct,personalTarget:personalTarget(n.results,r.game,r.level),rated:s.mode!=='practice',mode:s.mode??'legacy',explanation:explanation(r.state)};
  result.rating=Math.round(score(result)*100);result.scoringVersion=2;n.results.push(result);result.adjustment=result.rated?adjust(n,r.game):'自由练习不重复计入难度与能力趋势';result.after=n.difficulties[r.game].level;s.results.push(result);s.review=structuredClone(r);s.round=null;s.transition=CONFIG.transitionSeconds;s.paused=false;
+ if(outcome!=='completed'&&s.bonus)s.bonus.blocked=true;
+ if(outcome==='completed')appendBonus(n);
  if(outcome==='ended'||s.index===s.plan.length-1||s.elapsed>=s.limit||dailyUsed(n,s.day)>=CONFIG.dailySeconds){s.finished=true;s.paused=true}return sync(n);
 }
 export function nextRound(data:AppData):AppData{if(!data.active||data.active.round||data.active.finished)return data;const n=structuredClone(data),s=n.active!;s.index++;const id=s.plan[s.index];if(!id){s.finished=true;return sync(n)}const remaining=Math.max(0,CONFIG.dailySeconds-dailyUsed(n,s.day));if(!remaining){s.finished=true;s.endReason='今日已达到 10 分钟。';return sync(n)}s.round=s.prepared?.[s.index]?structuredClone(s.prepared[s.index]):makeRound(id,n.difficulties[id].level,s.id+id,Math.min(150,s.limit-s.elapsed));s.round.limit=Math.min(s.round.limit,s.limit-s.elapsed,remaining);s.paused=false;s.transition=0;return sync(n)}
@@ -49,3 +51,26 @@ export function tick(data:AppData,seconds:number,day=data.active?.day??localDay(
 }
 export function play(data:AppData,action:Action):AppData{if(!data.active?.round||data.active.paused||data.active.finished)return data;const n=structuredClone(data);n.active!.round=act(n.active!.round!,action);const r=n.active!.round!;if(gameDone(r.state)&&(r.state.kind!=='twentyfour'||action.type==='submit'))return finishRound(n,'completed');return sync(n)}
 export function pause(data:AppData,value:boolean):AppData{if(!data.active||data.active.finished||data.active.paused===value)return data;const n=structuredClone(data);n.active!.paused=value;return sync(n)}
+
+export function trainingGroup(s:Session):1|2{return s.bonus?.generated&&s.index>=s.bonus.firstCount?2:1}
+/** Called only in the atomic completion update; loading a plan never generates questions. */
+function appendBonus(data:AppData){
+ const s=data.active!,b=s.bonus;
+ if(s.mode!=='daily'||!b||b.generated||b.blocked||s.index!==b.firstCount-1||s.results.length!==b.firstCount||!s.results.every(r=>r.outcome==='completed'))return;
+ b.firstSeconds=s.results.reduce((sum,r)=>sum+r.duration,0);
+ if(b.firstSeconds>=CONFIG.bonusThresholdSeconds)return;
+ const remaining=Math.max(0,CONFIG.dailySeconds-dailyUsed(data,s.day));
+ const budget=Math.min(s.limit-s.elapsed,remaining);
+ const ids=bonusPlan(s.plan,s.seed+':group:2').slice(0,Math.floor(budget/CONFIG.bonusMinRoundSeconds));
+ if(!ids.length)return;
+ const used=new Set((s.prepared??[]).map(r=>questionSignature(r.state)));const prepared:Round[]=[];
+ for(const id of ids){
+  for(let attempt=0;attempt<32;attempt++){
+   const r=makeRound(id,data.difficulties[id].level,s.seed+':group:2:'+id+':'+attempt,budget/ids.length);
+   const signature=questionSignature(r.state);if(used.has(signature))continue;
+   used.add(signature);prepared.push(r);break;
+  }
+ }
+ if(!prepared.length)return;
+ b.generated=true;s.plan.push(...prepared.map(r=>r.game));s.prepared!.push(...prepared);
+}

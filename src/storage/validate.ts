@@ -38,9 +38,10 @@ export function validSession(v:unknown):v is Session{
  if(v.version===2&&v.mode==='daily'&&v.prepared===undefined)return false;
  const round=(r:unknown)=>obj(r)&&gameIds.includes(r.game as never)&&num(r.level,1,10)&&Number.isInteger(r.level)&&num(r.elapsed,0,600)&&num(r.limit,0,600)&&Number(r.elapsed)<=Number(r.limit)&&num(r.attempts)&&Number.isInteger(r.attempts)&&num(r.correct,0,Number(r.attempts))&&Number.isInteger(r.correct)&&num(r.hints)&&Number.isInteger(r.hints)&&typeof r.message==='string'&&r.message.length<=10000&&validState(r.state)&&r.state.kind===r.game;
  if(v.round!==null&&!round(v.round))return false;
- if(v.prepared!==undefined&&(!arr(v.prepared,8)||!(v.prepared as unknown[]).every(round)||(v.prepared as unknown[]).length!==(v.plan as unknown[]).length))return false;
- if(v.replacements!==undefined&&!ints(v.replacements,8,7))return false;
+ if(v.prepared!==undefined&&(!arr(v.prepared,10)||!(v.prepared as unknown[]).every(round)||(v.prepared as unknown[]).length!==(v.plan as unknown[]).length))return false;
+ if(v.replacements!==undefined&&!ints(v.replacements,10,9))return false;
  if(v.transition!==undefined&&!num(v.transition,0,10))return false;
+ if(v.bonus!==undefined){const b=v.bonus;if(!obj(b)||!Number.isInteger(b.firstCount)||!num(b.firstCount,1,5)||typeof b.generated!=='boolean'||typeof b.blocked!=='boolean'||(b.firstSeconds!==undefined&&!num(b.firstSeconds,0,600))||(b.generated?Number(b.firstCount)>=(v.plan as unknown[]).length:Number(b.firstCount)!==(v.plan as unknown[]).length))return false;}
  if(v.review!==undefined&&v.review!==null&&!round(v.review))return false;
  if(v.round!==null&&(v.round as {game:string}).game!==(v.plan as string[])[Number(v.index)])return false;
  if(v.prepared!==undefined&&!(v.prepared as {game:string}[]).every((r,i)=>r.game===(v.plan as string[])[i]))return false;

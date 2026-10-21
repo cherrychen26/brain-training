@@ -3,3 +3,9 @@ import {random,seedOf,shuffle} from './random';
 import {CONFIG} from './config';
 function rawPlan(day:string,user:string,available:readonly GameId[]){const ordinal=Math.floor(Date.parse(day+'T12:00:00Z')/86400000);const week=Math.floor((ordinal+3)/7),weekday=(ordinal+3)%7;const pool=shuffle([...new Set(available)],random(seedOf(`${user}:week:${week}`)));if(!pool.length)return [];const rng=random(seedOf(`${user}:${day}:plan:${CONFIG.planVersion}`));const count=Math.min(pool.length,CONFIG.minGames+Math.floor(rng()*(CONFIG.maxGames-CONFIG.minGames+1)));const offset=(weekday*3)%pool.length;return Array.from({length:count},(_,i)=>pool[(offset+i)%pool.length])}
 export function dailyPlan(day:string,user='default',available:readonly GameId[]=gameIds):GameId[]{const plan=rawPlan(day,user,available);const date=new Date(day+'T12:00:00Z');date.setUTCDate(date.getUTCDate()-1);const previous=rawPlan(date.toISOString().slice(0,10),user,available);if(plan.length<available.length&&[...plan].sort().join() === [...previous].sort().join()){const other=available.find(id=>!plan.includes(id));if(other)plan[plan.length-1]=other}return plan}
+
+/** Prefer unused types; bounded even when the pool is small. */
+export function bonusPlan(first:readonly GameId[],seed:string,available:readonly GameId[]=gameIds):GameId[]{
+ const rng=random(seedOf(seed));const pool=[...new Set(available)];
+ return [...shuffle(pool.filter(id=>!first.includes(id)),rng),...shuffle(pool.filter(id=>first.includes(id)),rng)].slice(0,Math.min(pool.length,CONFIG.minGames+Math.floor(rng()*(CONFIG.maxGames-CONFIG.minGames+1))));
+}

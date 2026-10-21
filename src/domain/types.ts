@@ -11,7 +11,7 @@ export const gameMeta:Record<GameId,{name:string;skill:string;description:string
  reaction:{name:'反应与注意力',skill:'专注力',description:'看到“按”再点击，看到“停”请等待。',color:0},
 };
 export type Outcome='completed'|'skipped'|'ended'|'timeout';
-export interface Result {id:string;sessionId:string;game:GameId;level:number;date:string;day:string;duration:number;target:number;correct:number;attempts:number;hints:number;outcome:Outcome;before:number;after:number;errors?:number;rating?:number;scoringVersion?:number;personalTarget?:number;rated?:boolean;adjustment?:string;explanation?:string;mode?:'daily'|'practice'|'legacy'}
+export interface Result {group?:1|2;id:string;sessionId:string;game:GameId;level:number;date:string;day:string;duration:number;target:number;correct:number;attempts:number;hints:number;outcome:Outcome;before:number;after:number;errors?:number;rating?:number;scoringVersion?:number;personalTarget?:number;rated?:boolean;adjustment?:string;explanation?:string;mode?:'daily'|'practice'|'legacy'}
 export interface Difficulty {level:number;lastChangeCount:number}
 export interface Settings {largeText:boolean;highContrast:boolean;sessionMinutes:6|8|10}
 export interface SchulteState {kind:'schulte';size:number;cells:number[];next:number;highlight:number|null}
@@ -27,5 +27,5 @@ export interface SokobanBoard {width:number;height:number;walls:number[];goals:n
 export interface SokobanState extends SokobanBoard {kind:'sokoban';initial:SokobanBoard;undo:{player:number;boxes:number[]}[];moves:number;solution:Direction[];highlight:Direction|null;optimalSteps?:number}
 export type GameState=SchulteState|SudokuState|TwentyFourState|MemoryState|SokobanState|NumbersState|PatternsState|ReactionState;
 export interface Round {game:GameId;level:number;elapsed:number;limit:number;correct:number;attempts:number;hints:number;state:GameState;message:string}
-export interface Session {id:string;day:string;startedAt:string;plan:GameId[];index:number;elapsed:number;limit:number;paused:boolean;round:Round|null;results:Result[];finished:boolean;mode?:'daily'|'practice'|'legacy';version?:number;seed?:string;prepared?:Round[];replacements?:number[];transition?:number;review?:Round|null;endReason?:string}
+export interface Session {bonus?:{firstCount:number;generated:boolean;blocked:boolean;firstSeconds?:number};id:string;day:string;startedAt:string;plan:GameId[];index:number;elapsed:number;limit:number;paused:boolean;round:Round|null;results:Result[];finished:boolean;mode?:'daily'|'practice'|'legacy';version?:number;seed?:string;prepared?:Round[];replacements?:number[];transition?:number;review?:Round|null;endReason?:string}
 export interface AppData {schemaVersion:1|2;settings:Settings;difficulties:Record<GameId,Difficulty>;results:Result[];active:Session|null;profileId?:string;plans?:Record<string,Session>}
