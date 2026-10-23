@@ -1,10 +1,14 @@
+import {confirmRound,startSession as rawStart,nextRound as rawNext} from '../src/domain/session';
+import type {AppData as RunningData,GameId as RunningGame} from '../src/domain/types';
+const startSession=(d:RunningData,day?:string,id?:RunningGame)=>confirmRound(rawStart(d,day,id));
+const nextRound=(d:RunningData)=>confirmRound(rawNext(d));
 import {describe,it,expect} from 'vitest';
 import {random} from '../src/domain/random';
 import {makeGame,act,gameDone} from '../src/games/engine';
 import {generateSudoku,countSolutions,validSudoku} from '../src/games/sudoku';
 import {generate24,check24,solve24} from '../src/games/twentyfour';
 import {generateBox,moveBox,wonBox,solveBox} from '../src/games/sokoban';
-import {newData,startSession,play,tick,pause,finishRound,nextRound,endSession,dailyPlan,adjust,weekResults} from '../src/domain/training';
+import {newData,play,tick,pause,finishRound,endSession,dailyPlan,adjust,weekResults} from '../src/domain/training';
 import {parseBackup,mergeBackup,exportBackup} from '../src/storage/backup';
 import {gameIds,type Result,type Round,type SokobanBoard} from '../src/domain/types';
 describe('题目可验证与可解',()=>{

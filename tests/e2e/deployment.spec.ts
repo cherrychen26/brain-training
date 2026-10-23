@@ -28,3 +28,5 @@ test('发布路径资源无404、无脚本异常，hash页面可直接进入并�
  }
  expect(failures).toEqual([]);expect(errors).toEqual([]);
 });
+
+test.beforeEach(async({page})=>{await page.addLocatorHandler(page.getByRole('button',{name:'确认并开始训练',exact:true}),async()=>{await page.getByRole('button',{name:'确认并开始训练',exact:true}).click()})});

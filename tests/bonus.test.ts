@@ -1,6 +1,10 @@
+import {confirmRound,startSession as rawStart,nextRound as rawNext} from '../src/domain/session';
+import type {AppData as RunningData,GameId as RunningGame} from '../src/domain/types';
+const startSession=(d:RunningData,day?:string,id?:RunningGame)=>confirmRound(rawStart(d,day,id));
+const nextRound=(d:RunningData)=>confirmRound(rawNext(d));
 import 'fake-indexeddb/auto';
 import {it,expect} from 'vitest';
-import {newData,startSession,finishRound,nextRound,tick,pause,endSession,rollover,dailyUsed,trainingGroup} from '../src/domain/session';
+import {newData,finishRound,tick,pause,endSession,rollover,dailyUsed,trainingGroup} from '../src/domain/session';
 import type {AppData,Outcome} from '../src/domain/types';
 import {questionSignature} from '../src/games/signature';
 import {validState} from '../src/storage/validate';
@@ -34,10 +38,10 @@ it('第二组只生成一次、转换和休息不计时、第二组完成直接�
  expect(startSession(d,day).results).toEqual(d.results);expect(finishRound(d,'completed')).toEqual(d);
 });
 it('含自由练习预算不足不加练；剩余少量时缩减组数且绝不超过600秒',()=>{
- for(const spent of [500,450]){let d=newData();for(let n=0;n<4;n++){d=startSession(d,day,'sudoku');d=tick(d,spent/4);d=endSession(d)}
+ for(const spent of [500,450]){let d=newData();for(let n=0;n<8;n++){d=startSession(d,day,'sudoku');d=tick(d,spent/8);d=endSession(d)}
  d=startSession(d,day);d=first(90,'completed',d);
  expect(d.active!.bonus!.generated).toBe(spent===450);
- if(spent===450){expect(d.active!.plan.length-d.active!.bonus!.firstCount).toBe(2);d=nextRound(d);while(!d.active!.finished){d=tick(d,99999);if(!d.active!.finished)d=nextRound(d)}expect(dailyUsed(d,day)).toBeCloseTo(600)}
+ if(spent===450){expect(d.active!.plan.length-d.active!.bonus!.firstCount).toBe(2);d=nextRound(d);while(!d.active!.finished){d=tick(d,99999);if(!d.active!.finished)d=nextRound(d)}d=startSession(d,day,'sudoku');d=tick(d,99999);expect(dailyUsed(d,day)).toBeCloseTo(600)}
  expect(dailyUsed(d,day)).toBeLessThanOrEqual(600);
  }
 });
@@ -50,7 +54,7 @@ it('旧版无加练字段继续正常读取，不追溯生成第二组',()=>{con
 it('30个种子的第二组优先未用类型、题目去重、可解且沿用独立等级',()=>{
  for(let i=0;i<30;i++){const data=newData();data.profileId=`bonus-${i}`;data.difficulties.sudoku.level=6;const d=first(99,'completed',startSession(data,day)),s=d.active!,cut=s.bonus!.firstCount;
  const signatures=s.prepared!.map(r=>questionSignature(r.state));expect(new Set(signatures).size).toBe(signatures.length);
- const firstIds=s.plan.slice(0,cut),second=s.plan.slice(cut);const unused=8-new Set(firstIds).size;expect(second.slice(0,Math.min(unused,second.length)).every(id=>!firstIds.includes(id))).toBe(true);
+ const firstIds=s.plan.slice(0,cut),second=s.plan.slice(cut);const unused=11-new Set(firstIds).size;expect(second.slice(0,Math.min(unused,second.length)).every(id=>!firstIds.includes(id))).toBe(true);
  for(const r of s.prepared!.slice(cut)){expect(validState(r.state)).toBe(true);expect(r.level).toBe(d.difficulties[r.game].level)}
  }
 });

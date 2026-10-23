@@ -1,6 +1,9 @@
-export const gameIds = ['schulte','sudoku','twentyfour','memory','sokoban','numbers','patterns','reaction'] as const;
+import type {differencePuzzle,mazePuzzle,linkPuzzle} from '../games/visual';
+export const gameIds = ['schulte','sudoku','twentyfour','memory','sokoban','numbers','patterns','reaction','differences','maze','links'] as const;
 export type GameId = typeof gameIds[number];
+export type VisualState=({kind:'differences'}&ReturnType<typeof differencePuzzle>)|({kind:'maze'}&ReturnType<typeof mazePuzzle>)|({kind:'links'}&ReturnType<typeof linkPuzzle>);
 export const gameMeta:Record<GameId,{name:string;skill:string;description:string;color:number}> = {
+ differences:{name:'找不同',skill:'观察力',description:'比较两幅图案，找出所有差异。',color:1},maze:{name:'迷宫',skill:'规划力',description:'寻找通向终点的路线。',color:4},links:{name:'连连看',skill:'专注力',description:'用不超过两个转角连接相同图案。',color:2},
  schulte:{name:'舒尔特方格',skill:'专注力',description:'按顺序寻找数字，练习专注与观察。',color:0},
  sudoku:{name:'数独',skill:'逻辑力',description:'填一填数字，让每一行都恰到好处。',color:2},
  twentyfour:{name:'24 点',skill:'计算力',description:'四个数字，加减乘除，巧妙得到 24。',color:3},
@@ -11,8 +14,8 @@ export const gameMeta:Record<GameId,{name:string;skill:string;description:string
  reaction:{name:'反应与注意力',skill:'专注力',description:'看到“按”再点击，看到“停”请等待。',color:0},
 };
 export type Outcome='completed'|'skipped'|'ended'|'timeout';
-export interface Result {group?:1|2;id:string;sessionId:string;game:GameId;level:number;date:string;day:string;duration:number;target:number;correct:number;attempts:number;hints:number;outcome:Outcome;before:number;after:number;errors?:number;rating?:number;scoringVersion?:number;personalTarget?:number;rated?:boolean;adjustment?:string;explanation?:string;mode?:'daily'|'practice'|'legacy'}
-export interface Difficulty {level:number;lastChangeCount:number}
+export interface Result {prescribed?:number;fast?:boolean;group?:1|2;id:string;sessionId:string;game:GameId;level:number;date:string;day:string;duration:number;target:number;correct:number;attempts:number;hints:number;outcome:Outcome;before:number;after:number;errors?:number;rating?:number;scoringVersion?:number;personalTarget?:number;rated?:boolean;adjustment?:string;explanation?:string;mode?:'daily'|'practice'|'legacy'}
+export interface Difficulty {offer?:{level:number;duration:number;limit:number};level:number;lastChangeCount:number}
 export interface Settings {largeText:boolean;highContrast:boolean;sessionMinutes:6|8|10}
 export interface SchulteState {kind:'schulte';size:number;cells:number[];next:number;highlight:number|null}
 export interface SudokuState {kind:'sudoku';size:4|6;solution:number[];givens:number[];cells:number[];selected:number|null}
@@ -21,11 +24,11 @@ export interface MemoryState {kind:'memory';cards:number[];open:number[];matched
 export interface NumbersState {kind:'numbers';sequences:string[];index:number;phase:'show'|'recall'|'feedback';phaseUntil:number;exposure:number;answer:string;feedback:string;done:boolean}
 export interface PatternQuestion {values:number[];answer:number;choices:number[];rule:string}
 export interface PatternsState {kind:'patterns';questions:PatternQuestion[];index:number;feedback:string;answered:boolean;done:boolean}
-export interface ReactionState {kind:'reaction';stimuli:boolean[];index:number;interval:number;gap:number;deadline:number;phase:'stimulus'|'gap';responded:boolean;responseTimes:number[];done:boolean}
+export interface ReactionState {palette?:number;kind:'reaction';stimuli:boolean[];index:number;interval:number;gap:number;deadline:number;phase:'stimulus'|'gap';responded:boolean;responseTimes:number[];done:boolean}
 export type Direction='up'|'down'|'left'|'right';
 export interface SokobanBoard {width:number;height:number;walls:number[];goals:number[];boxes:number[];player:number}
 export interface SokobanState extends SokobanBoard {kind:'sokoban';initial:SokobanBoard;undo:{player:number;boxes:number[]}[];moves:number;solution:Direction[];highlight:Direction|null;optimalSteps?:number}
-export type GameState=SchulteState|SudokuState|TwentyFourState|MemoryState|SokobanState|NumbersState|PatternsState|ReactionState;
-export interface Round {game:GameId;level:number;elapsed:number;limit:number;correct:number;attempts:number;hints:number;state:GameState;message:string}
+export type GameState=VisualState|SchulteState|SudokuState|TwentyFourState|MemoryState|SokobanState|NumbersState|PatternsState|ReactionState;
+export interface Round {ready?:boolean;manualLevel?:boolean;game:GameId;level:number;elapsed:number;limit:number;correct:number;attempts:number;hints:number;state:GameState;message:string}
 export interface Session {bonus?:{firstCount:number;generated:boolean;blocked:boolean;firstSeconds?:number};id:string;day:string;startedAt:string;plan:GameId[];index:number;elapsed:number;limit:number;paused:boolean;round:Round|null;results:Result[];finished:boolean;mode?:'daily'|'practice'|'legacy';version?:number;seed?:string;prepared?:Round[];replacements?:number[];transition?:number;review?:Round|null;endReason?:string}
 export interface AppData {schemaVersion:1|2;settings:Settings;difficulties:Record<GameId,Difficulty>;results:Result[];active:Session|null;profileId?:string;plans?:Record<string,Session>}

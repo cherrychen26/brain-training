@@ -1,0 +1,7 @@
+import {it,expect} from 'vitest';
+import {random} from '../src/domain/random';
+import {differencePuzzle,findDifference,mazePuzzle,mazeRoute,linkPuzzle,linkPath,availableLink,rescueLinks} from '../src/games/visual';
+it('找不同恰好生成要求数量，重复点击不重复记录',()=>{for(let l=1;l<=10;l++){const s=differencePuzzle(l,random(l));expect(s.left.flatMap((v,i)=>v!==s.right[i]?[i]:[]).sort()).toEqual([...s.differences].sort());for(const i of s.differences){expect(findDifference(s,i)).toBe(true);expect(findDifference(s,i)).toBe(false)}}});
+it('每级100个随机迷宫有真实相邻通路',()=>{for(let l=1;l<=10;l++)for(let seed=1;seed<=100;seed++){const s=mazePuzzle(l,random(seed)),path=mazeRoute(s);expect(path[0]).toBe(s.start);expect(path.at(-1)).toBe(s.goal);for(const p of path)expect(s.cells[p]).toBe(0)}});
+it('连连看外围连接、不同图案拒绝、同格拒绝及死局判定',()=>{expect(linkPath([1,2,2,1],2,0,3)).toBeNull();expect(linkPath([1,2,1,2],2,0,2)).not.toBeNull();expect(linkPath([1,2],2,0,1)).toBeNull();expect(linkPath([1,1],2,0,0)).toBeNull();expect(availableLink([1,2,2,1],2)).toBeNull()});
+it('每级随机棋盘可逐对消除到空盘，死局重排保留元素',()=>{for(let l=1;l<=10;l++)for(let seed=1;seed<=20;seed++){const rng=random(seed),s=linkPuzzle(l,rng);for(let remaining=s.cells.length;remaining>0;remaining-=2){const before=s.cells.filter(Boolean).sort();rescueLinks(s.cells,s.width,rng);expect(s.cells.filter(Boolean).sort()).toEqual(before);const pair=availableLink(s.cells,s.width);expect(pair).not.toBeNull();for(const p of pair!)s.cells[p]=0}expect(s.cells.every(v=>v===0)).toBe(true)}});

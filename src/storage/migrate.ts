@@ -11,6 +11,6 @@ export function migrateData(raw:AppData,day=localDay()):AppData{
  // A previously completed same-day legacy session must not become a fresh scoring opportunity.
  for(const date of new Set(n.results.filter(r=>r.mode==='legacy').map(r=>r.day))){if(n.plans[date])continue;const rs=n.results.filter(r=>r.day===date);n.plans[date]={id:`legacy:${date}`,day:date,startedAt:rs[0].date,plan:rs.map(r=>r.game),index:Math.max(0,rs.length-1),elapsed:rs.reduce((a,r)=>a+r.duration,0),limit:600,paused:true,round:null,results:rs,finished:true,mode:'daily',version:1}}
  // A running first group restored after an unexpected exit remains resumable, but cannot earn an extra group.
- if(n.active&&!n.active.finished&&!n.active.paused&&n.active.bonus&&!n.active.bonus.generated){n.active.bonus.blocked=true;n.plans[n.active.day]=structuredClone(n.active)}
+ if(n.active&&!n.active.finished&&!n.active.paused&&n.active.round?.ready!==false&&n.active.bonus&&!n.active.bonus.generated){n.active.bonus.blocked=true;n.plans[n.active.day]=structuredClone(n.active)}
  n.schemaVersion=2;return ensureDailyPlan(pause(rollover(n,day),true),day);
 }
